@@ -58,11 +58,13 @@ metadata:
 
 ## F2. 主动投递 loop（手动/goal 触发）
 
+**⛔ 单入口硬约束（v0.3.1，事故后定稿）**：所有打招呼/发起沟通动作**只允许通过 `scripts/apply-one.js` 执行**。该脚本内置两道闸：① 无 roster 文件直接拒绝运行；② 岗位 ID 已在 `applied-jobs.json` 里则跳过不发。**禁止 agent 手写"点继续聊→输入文本→发送"的裸流程**——两次重复招呼事故的根因都是绕过闸门的手写操作。汇报表格里每个岗位必须能对上 `applied-jobs.json` 的记录行。
+
 输入：关键词 + 城市（+可选筛选）。缺省用画像方向或追问一次。
 
 1. 读对应站点知识包（[references/boss-zhipin.md](references/boss-zhipin.md) / [references/liepin.md](references/liepin.md)）。
 2. **应用筛选条件**（三层，全部可被用户当次指令覆盖）：
-   - **硬性排除——未沟通过**：打招呼只投"从未发起过沟通"的岗位。**先建名单再投递（所有平台通用）**：进入目标平台消息中心，批量提取已有会话的「公司+HR」为已沟通名单；候选命中名单 → 跳过。按钮状态文案只能作补充信号、**不得单独作为判据**（猎聘「继续聊」实测常驻不变，不可靠）。同公司不同岗位默认也算已沟通。名单拉取失败 → 本轮降级 dry-run。规则细节见各知识包「已沟通识别」。**绝不重复给同一公司/HR 发招呼**。
+   - **硬性排除——未沟通过**：打招呼只投"从未发起过沟通"的岗位。**名单数据源（猎聘已实测）**：`https://c.liepin.com/job/record/apply`「我的投递」页——每条记录含 岗位名 + 公司 + 状态 + 时间，是官方投递账本，比 IM 会话列表可靠且无重定向问题。Boss直聘仍用消息页 `/web/geek/chat` 提取。命中名单 → 跳过；同时比对 workspace `applied-jobs.json`（岗位 ID 级）。按钮状态文案只能作补充信号、**不得单独作为判据**（猎聘「继续聊」实测常驻不变，不可靠）。同公司不同岗位默认也算已沟通。名单拉取失败 → 本轮降级 dry-run。**绝不重复给同一公司/HR 发招呼**。
    - **执行顺序硬约束**：投递 loop 的第一个浏览器动作必须是运行 [scripts/build-contacted-roster.js](scripts/build-contacted-roster.js) 拿到名单 JSON；之后每个候选在点沟通按钮**之前**必须完成名单比对并在汇报里写明判定依据（`已沟通名单命中 / 按钮状态词 / 均未见→允许`）。**没有名单就没有外发**——哪怕用户催、哪怕只投一个。
    - **单轮单发 + 同轮去重（v0.3 实测教训）**：同一轮任务里，某个岗位/公司**一旦发起过沟通，本轮不得再对它发送任何消息**——自动预设话术已经说清了应聘意图，追加"自我介绍第二遍"是重复打招呼的主要形态。开新岗位前先在内部记 `本轮已发起 = {公司+岗位ID}` 集合，命中即跳过。**跨轮防重复靠名单文件**：roster 脚本把名单落盘（workspace `contacted-roster.json`，带日期），后续任何轮投递前必须先读该文件再比对，哪怕消息页拉取失败。
    - **dry-run 零外发**：用户说 dry-run/先列清单时，禁止点击任何沟通入口（点了「继续聊」即触发平台自动招呼，等于偷跑）。dry-run 只能在列表页/卡片读取信息判断，或明确标注"未进入详情页"。
@@ -150,7 +152,10 @@ HR 问到画像外/红线信息、或意图不明不敢回时：
 ## 脚本与运行时产物
 
 - [scripts/](scripts/) 为验证过的脚本骨架（`ego-browser nodejs < xxx.js` 或 heredoc 执行），改 CONFIG 即用。
-- 运行时产物不进版本库：**待补充清单在桌面** `job-hunting-follow-ups.md`（F10）；`patrol-state.json`、`job-profile.json`（降级画像）、留证截图在 workspace。
+  - **build-contacted-roster.js**：投递 loop 第 0 步，产出 workspace `contacted-roster.json`；
+  - **apply-one.js**：**唯一允许的打招呼入口**（双闸门：无名单拒发 + applied-jobs.json 岗位ID去重）；
+  - send-greeting.js 已废弃（保留仅供阅读，禁止直接执行——它没有闸门）。
+- 运行时产物不进版本库：**待补充清单在桌面** `job-hunting-follow-ups.md`（F10）；workspace 内 `contacted-roster.json`（名单）、`applied-jobs.json`（本轮+历史发起记录）、`patrol-state.json`、`job-profile.json`（降级画像）、留证截图。
 
 ## References
 

@@ -8,8 +8,10 @@ const CONFIG = {
   platform: "boss",            // "boss" | "liepin"
   chatUrls: {
     boss: "https://www.zhipin.com/web/geek/chat",
-    liepin: null,              // 猎聘入口未实测：留空则走首页右上角消息图标点进去（snapshot 定位）
+    // 猎聘已实测：IM 域 d.liepin.com/chat 会重定向回首页；官方投递账本才是可靠名单源
+    liepin: "https://c.liepin.com/job/record/apply",
   },
+  workspaceDir: "/absolute/path/to/workspace", // applied 合并输出用，绝对路径
 };
 
 const task = await taskSpace(CONFIG.spaceName);
@@ -43,7 +45,7 @@ while (rounds < 8) {
   prevCount = grown; rounds++;
 }
 
-// 批量提取：会话项文本通常形如「姓名+称呼 · 公司 · 最近消息 · 时间」
+// Boss 消息页与猎聘投递页的列表项都形如「岗位名【城市】薪资 要求… 公司名 行业规模 (HR称呼) 状态/时间」
 const roster = await page.evaluate(() => {
   const items = [...document.querySelectorAll('li,[class*="conversation-item"],[class*="chat-item"]')]
     .map(el => el.innerText?.replace(/\s+/g, " ").trim())
@@ -58,13 +60,15 @@ const roster = await page.evaluate(() => {
 });
 
 if (!roster.length) throw new Error("ROSTER EMPTY: 名单为空但页面正常——可能选择器失效 → 降级 dry-run 并人工核对");
-console.log(JSON.stringify({ count: roster.length, roster }, null, 1));
 
-// 【必须】把名单落盘供跨轮比对：消息页拉取失败时，后续轮次仍要读这份文件兜底。
-// agent 在 Node 脚本里追加（本骨架只输出；实际由调用方写入）：
-//   const fs = await import("node:fs/promises");
-//   let acc = []; try { acc = JSON.parse(await fs.readFile("<workspace>/contacted-roster.json","utf8")); } catch {}
-//   merge by company(normalized)+hr into acc; await fs.writeFile(..., JSON.stringify({updated_at, companies: acc}, null, 1));
-// 投递前比对同样走这个文件 + 本轮内存集合的并集。
-// agent 用法：把 company 集合存进当轮变量；每个候选岗位从详情页/列表卡片抽公司名，
-// normalize（去空格、去括号地名）后与名单比对；同公司不同岗位同样视为已沟通。
+// 落盘 contacted-roster.json：apply-one.js 的闸1依赖此文件存在且非空
+const fs = await import("node:fs/promises");
+let prev = { companies: [], entries: [] };
+try { prev = JSON.parse(await fs.readFile(`${CONFIG.workspaceDir}/contacted-roster.json`, "utf8")); } catch {}
+const norm = (s) => String(s || "").replace(/[\s()（）·]/g, "");
+const merged = [...prev.companies];
+for (const r of roster) if (r.company && !merged.some(c => norm(c) === norm(r.company))) merged.push(r.company);
+await fs.writeFile(`${CONFIG.workspaceDir}/contacted-roster.json`,
+  JSON.stringify({ updated_at: new Date().toISOString(), companies: merged, entries: roster }, null, 1));
+console.log(JSON.stringify({ count: roster.length, totalCompanies: merged.length }, null, 1));
+// 同公司不同岗位同样视为已沟通；比对统一走 normalize 后的公司名。
