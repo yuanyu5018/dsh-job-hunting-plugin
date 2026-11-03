@@ -1,7 +1,7 @@
 // reply-and-send-resume.js — 对【已打开】的会话执行：简短回复 →（仅积极信号时）发简历 → 验证 → 留证。
 // 前置：会话已在目标 Page 打开（scan 后用 text=<对方消息预览> 点开）。
 // ⚠️ 铁律2：sendResume=true 只允许在 agent 判定对方最新消息构成 SKILL.md F3「积极信号」后注入；
-//    纯打招呼/邀约场景必须传 sendResume:false，等下一轮对方回应。画像外信息一律不发（走 follow-ups）。
+//    纯打招呼/邀约场景必须传 sendResume:false，等下一轮对方回应。画像外信息一律不发（记入桌面 job-hunting-follow-ups.md，见 SKILL.md F10）。
 // ⚠️ 骨架：API 以 `ego-browser skill` 当前版本文档为准；发送前幂等检查不可省略。
 const CONFIG = {
   spaceName: "job-hunting-patrol",
