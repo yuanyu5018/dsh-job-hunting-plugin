@@ -1,0 +1,62 @@
+{
+  "name": "@dsh-community/dsh-job-hunting-plugin",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness 求职自动化插件：Boss直聘/猎聘自动投递、打招呼、未读消息按规则回复与发简历。内置用户画像问卷、值守定时任务与风控安全边界。",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "dsh-plugin",
+    "job-hunting",
+    "boss-zhipin",
+    "liepin",
+    "ego-browser",
+    "automation"
+  ],
+  "author": "<your-name>",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "index.mjs",
+  "icon": "./icon.svg",
+  "homepage": "https://github.com/<your-org>/dsh-job-hunting-plugin#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/<your-org>/dsh-job-hunting-plugin.git"
+  },
+  "bugs": {
+    "url": "https://github.com/<your-org>/dsh-job-hunting-plugin/issues"
+  },
+  "exports": {
+    ".": "./index.mjs",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json",
+    "./cordis.patch.yml": "./cordis.patch.yml"
+  },
+  "files": [
+    "index.mjs",
+    "skills/",
+    "locale/",
+    "docs/",
+    "icon.svg",
+    "cordis.patch.yml",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "check": "node --check index.mjs && node scripts/validate-skill.mjs && node scripts/pii-scan.mjs",
+    "test": "node --test"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-skill-filesystem": ">=0.1.0-rc.6 <1.0.0-0"
+  },
+  "engines": {
+    "node": "^22.19.0 || >=24"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

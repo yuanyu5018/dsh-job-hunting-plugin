@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Job Hunting Automation",
+    "description": "Automated job application and HR-message handling for Boss Zhipin and Liepin via ego-browser: onboarding questionnaire, profile-driven replies, guarded scheduled patrols, resume sending. Built-in rate-limit awareness and safety boundaries.",
+    "detail": "docs/DETAIL.md"
+  }
+}

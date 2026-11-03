@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "求职自动化",
+    "description": "基于 ego-browser 的 Boss直聘/猎聘自动投递与 HR 消息处理：前置画像问卷、按规则回复未读、值守定时巡检、发送简历。内置平台限额感知与风控安全边界。",
+    "detail": "docs/DETAIL.zh.md"
+  }
+}

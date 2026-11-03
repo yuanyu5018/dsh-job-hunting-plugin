@@ -1,0 +1,11 @@
+# dsh-job-hunting-plugin 的挂载声明。
+#
+# DSH 启动时把各插件 bundle 的 patch 叠进配置树，本文件就是本插件这一层：
+#   - insert：向配置树添加新的插件行（entry）
+#   - id：行标识，全局唯一；用户的 cordis.patch.yml 可按此 id 覆盖配置
+#   - name：插件模块名＝npm 包名，解析到 package.json 的 main（index.mjs）
+#
+# 注意：`id:` 行不要写行尾注释——插件市场预检用正则抓该行的值。
+- insert:
+    - id: job-hunting-skills
+      name: '@dsh-community/dsh-job-hunting-plugin'

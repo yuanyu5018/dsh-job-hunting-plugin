@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # bundle 壳语法检查（index.mjs 的 import 依赖 peer，CI 不安装）
+      - name: Syntax check
+        run: node --check index.mjs
+      # skill 结构校验：frontmatter、链接、verified_at
+      - name: Validate skills
+        run: node scripts/validate-skill.mjs
+      # PII 扫描：真实姓名/手机号/邮箱/个人路径一律拒绝入库
+      - name: PII scan
+        run: node scripts/pii-scan.mjs
