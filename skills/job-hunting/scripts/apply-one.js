@@ -7,9 +7,9 @@ const CONFIG = {
   spaceName: "job-hunting-apply",
   pageLabel: "p3",                       // 岗位详情页所在 Page
   jobId: "<详情页URL中的数字ID>",          // 必填：如 https://www.liepin.com/job/1986114149.shtml → 1986114149
+  jobName: "<岗位名，用于验证自动消息文案>", // 选填
   company: "<岗位所属公司名>",             // 必填：与 roster 比对用
   hr: "<HR称呼，如 罗女士>",               // 必填：汇报用
-  greeting: null,                        // 仅 Boss直聘需要手输招呼语时填（画像⑫）；猎聘留 null——点「继续聊」后自动话术即完整招呼，禁止再补任何文本
   contactButton: 'text="继续聊"',          // Boss 改 'text="立即沟通"'
   workspaceDir: "/absolute/path/to/workspace", // 绝对路径！脚本不继承 shell cwd
 };
@@ -41,28 +41,20 @@ if (!dupJob && !dupCompany) {
   const task = await taskSpace(CONFIG.spaceName);
   const page = task.page(CONFIG.pageLabel);
 
-  // 进入沟通窗口
+  // 进入沟通窗口——点击本身就是打招呼（平台自动发应聘消息），此后零输入
   await page.click(CONFIG.contactButton, { label: "发起沟通" });
   await page.waitForTimeout(4000);
   const snap = await page.snapshot();
   if (/已达到沟通上限|沟通上限/.test(snap)) throw new Error("LIMIT: 今日主动沟通达上限 → 停止整轮投递");
 
-  // 仅显式给了 greeting 才手动输入；否则信任平台自动话术即为完整招呼（铁律：绝不追加第二句）
-  if (CONFIG.greeting) {
-    const isCE = await page.evaluate(() => !!document.querySelector("div.chat-input"));
-    if (isCE) {
-      await page.click("loc=css:div.chat-input", { label: "聚焦输入框" });
-      await page.keyboard.insertText(CONFIG.greeting);
-      await page.keyboard.press("Enter");
-    } else {
-      console.log("WARN: 未找到 div.chat-input，且不确认其他输入方式 → 不冒险发送，人工处理");
-    }
-    await page.waitForFunction((t) => [...document.querySelectorAll("p")].some(n => n.textContent.trim() === t), CONFIG.greeting, { timeout: 8000 })
-      .then(() => console.log("GREETING SENT"))
-      .catch(() => console.log("VERIFY FAILED: snapshot 复核，勿重试点击"));
-  } else {
-    console.log("AUTO PRESET ONLY: 依赖平台自动话术，未追发任何文本");
-  }
+  // 验证自动消息已出现（聊天窗口内应有我方气泡含"应聘"或岗位名）；不发送任何新文本
+  const autoSent = await page.evaluate((job) => {
+    const mine = [...document.querySelectorAll('p,div[class*="msg"],div[class*="bubble"]')].map(n => n.textContent.trim());
+    return mine.some(t => t.includes('应聘') || (job && t.includes(job)));
+  }, CONFIG.jobName || "");
+  console.log(autoSent
+    ? "AUTO MESSAGE VERIFIED: 点击已构成打招呼，未追发任何文本"
+    : "WARN: 未确认到自动消息 → snapshot 人工复核，**严禁手动补发**（补发=二连发事故源头）");
 
   // 记账（成功判据之后才写）
   applied.jobs.push({ jobId: CONFIG.jobId, company: CONFIG.company, hr: CONFIG.hr, at: new Date().toISOString() });
