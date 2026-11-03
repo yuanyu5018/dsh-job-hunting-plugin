@@ -1,13 +1,12 @@
 // send-greeting.js — 对【已打开】的岗位详情页发起沟通并发送招呼语（Boss/猎聘双站点骨架）。
 // ⚠️ API 以 `ego-browser skill` 当前版本文档为准。
+// ⚠️ 铁律2：本脚本只发招呼语，不在此处发简历——简历由对方积极回应后走 reply-and-send-resume.js。
 const CONFIG = {
   spaceName: "job-hunting-apply",
   pageTitle: "p1",                     // 猎聘详情常开在新 tab：先 task.tabs() 确认 label
   greeting: "你好",                    // ← 从画像⑪注入
   contactButton: 'text="立即沟通"',     // Boss直聘；猎聘改为 'text="继续聊"'
   closePopupText: null,                // Boss 可能先弹提示窗，需要时填关闭按钮 text
-  sendResumeAfter: false,              // 打招呼后是否紧接着发简历
-  resumeFile: "<你的简历文件名>.pdf",   // ← 从画像⑬注入
   screenshotDir: "/absolute/path/workspace",
 };
 
@@ -46,18 +45,7 @@ if (/已达到沟通上限|沟通上限/.test(snap1)) {
       { timeout: 8000 },
     );
     console.log("GREETING SENT:", CONFIG.greeting);
-
-    // 4. 可选：发简历（同 reply-and-send-resume.js 三步流）
-    if (CONFIG.sendResumeAfter) {
-      await page.click('text="发简历"', { label: "点击发简历" });
-      await page.waitForTimeout(2500);
-      await page.click(`text=${CONFIG.resumeFile}`, { label: "选择简历" });
-      await page.waitForTimeout(800);
-      await page.click('loc=css:button:text-is("发送") >> nth=-1', { label: "确认发送简历" });
-      console.log(await page
-        .waitForFunction(() => document.body.innerText.includes("附件简历请求已发送"), undefined, { timeout: 8000 })
-        .then(() => "RESUME SENT").catch(() => "RESUME NOT VERIFIED — snapshot 复核，勿重复点"));
-    }
+    // 到此为止。发简历 = 对方积极回应后由 reply-and-send-resume.js 处理（SKILL.md 铁律2）。
   }
 }
 

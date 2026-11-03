@@ -1,15 +1,19 @@
-// reply-and-send-resume.js — 对【已打开】的会话执行：简短回复 → 发简历 → 验证 → 留证。
+// reply-and-send-resume.js — 对【已打开】的会话执行：简短回复 →（仅积极信号时）发简历 → 验证 → 留证。
 // 前置：会话已在目标 Page 打开（scan 后用 text=<对方消息预览> 点开）。
-// 铁律：只回一句短话术，不反问；画像外信息一律不发（改走 follow-ups 流程）。
+// ⚠️ 铁律2：sendResume=true 只允许在 agent 判定对方最新消息构成 SKILL.md F3「积极信号」后注入；
+//    纯打招呼/邀约场景必须传 sendResume:false，等下一轮对方回应。画像外信息一律不发（走 follow-ups）。
 // ⚠️ 骨架：API 以 `ego-browser skill` 当前版本文档为准；发送前幂等检查不可省略。
 const CONFIG = {
   spaceName: "job-hunting-patrol",
   pageLabel: "p1",
   reply: "你好，这是我的简历",      // ← 从画像⑫注入，勿硬编码个人话术
   resumeFile: "<你的简历文件名>.pdf", // ← 从画像⑬注入
-  sendResume: true,
+  sendResume: false,               // ← 默认关！仅 F3 积极信号成立时由 agent 改为 true
+  positiveSignal: null,            // ← sendResume=true 时必须填判定依据（对方原话摘录），留审计痕迹
   screenshotDir: "/absolute/path/workspace", // 脚本不继承 shell cwd，必须绝对路径
 };
+
+if (CONFIG.sendResume && !CONFIG.positiveSignal) throw new Error("BLOCKED: sendResume=true 但缺少 positiveSignal 判定依据（铁律2）");
 
 const task = await taskSpace(CONFIG.spaceName);
 const page = task.page(CONFIG.pageLabel);
@@ -45,8 +49,9 @@ if (lastOwn) {
   );
   console.log("MSG SENT:", CONFIG.reply);
 
-  // 3. 发简历三步流
+  // 3. 发简历三步流（仅积极信号时）
   if (CONFIG.sendResume) {
+    console.log("positive signal:", CONFIG.positiveSignal);
     await page.waitForTimeout(1500);
     await page.click('text="发简历"', { label: "点击发简历" });
     await page.waitForTimeout(2500);
