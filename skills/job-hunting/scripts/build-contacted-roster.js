@@ -59,5 +59,12 @@ const roster = await page.evaluate(() => {
 
 if (!roster.length) throw new Error("ROSTER EMPTY: 名单为空但页面正常——可能选择器失效 → 降级 dry-run 并人工核对");
 console.log(JSON.stringify({ count: roster.length, roster }, null, 1));
+
+// 【必须】把名单落盘供跨轮比对：消息页拉取失败时，后续轮次仍要读这份文件兜底。
+// agent 在 Node 脚本里追加（本骨架只输出；实际由调用方写入）：
+//   const fs = await import("node:fs/promises");
+//   let acc = []; try { acc = JSON.parse(await fs.readFile("<workspace>/contacted-roster.json","utf8")); } catch {}
+//   merge by company(normalized)+hr into acc; await fs.writeFile(..., JSON.stringify({updated_at, companies: acc}, null, 1));
+// 投递前比对同样走这个文件 + 本轮内存集合的并集。
 // agent 用法：把 company 集合存进当轮变量；每个候选岗位从详情页/列表卡片抽公司名，
 // normalize（去空格、去括号地名）后与名单比对；同公司不同岗位同样视为已沟通。
